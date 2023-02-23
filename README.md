@@ -3,7 +3,7 @@ Play Economy Inventory microservice
 
 ## Create and publish package
 ```powershell
-$version="1.0.2"
+$version="1.0.3"
 $owner="waikahu"
 $gh_pat="[PAT HERE]"
 
@@ -21,5 +21,7 @@ docker build --secret id=GH_OWNER --secret id=GH_PAT -t play.inventory:$version 
 
 ## Run the docker image
 ```powershell
-docker run -it --rm -p 5004:5004 --name inventory -e MongoDbSettings__Host=mongo -e RabbitMQSettings__Host=rabbitmq --network playinfra_default play.inventory:$version
+$cosmosDbConnString="[Conn HERE]"
+$serviceBusConnString="[Conn HERE]"
+docker run -it --rm -p 5004:5004 --name inventory -e MongoDbSettings__ConnectionString=$cosmosDbConnString -e ServiceBusSettings__ConnectionString=$serviceBusConnString -e ServiceSettings__MessageBroker="SERVICEBUS" play.inventory:$version
 ```

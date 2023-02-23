@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMongo()
     .AddMongoRepository<InventoryItem>("inventoryitems")
     .AddMongoRepository<CatalogItem>("catalogitems")
-    .AddMassTransitWithRabbitMq(retryConfig => 
+    .AddMassTransitWithMessageBroker(builder.Configuration, retryConfig => 
     {
         retryConfig.Interval(3, TimeSpan.FromSeconds(5));
         retryConfig.Ignore(typeof(UnknownItemException));
