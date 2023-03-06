@@ -3,7 +3,7 @@ Play Economy Inventory microservice
 
 ## Create and publish package
 ```powershell
-$version="1.0.3"
+$version="1.0.4"
 $owner="waikahu"
 $gh_pat="[PAT HERE]"
 
@@ -16,8 +16,8 @@ dotnet nuget push ..\packages\Play.Inventory.Contracts.$version.nupkg --api-key 
 ```powershell
 $env:GH_OWNER="waikahu"
 $env:GH_PAT="[PAT HERE]"
-$crname="wbplayeconomy"
-docker build --secret id=GH_OWNER --secret id=GH_PAT -t "$crname.azurecr.io/play.inventory:$version" .
+$appname="wbplayeconomy"
+docker build --secret id=GH_OWNER --secret id=GH_PAT -t "$appname.azurecr.io/play.inventory:$version" .
 ```
 
 ## Run the docker image
@@ -29,6 +29,45 @@ docker run -it --rm -p 5004:5004 --name inventory -e MongoDbSettings__Connection
 
 ## Publishing the Docker image
 ```powershell
-az acr login --name $crname
-docker push "$crname.azurecr.io/play.inventory:$version"
+az acr login --name $appname
+docker push "$appname.azurecr.io/play.inventory:$version"
+```
+
+## Create the Kubernetes namespace
+```powershell
+$namespace="inventory"
+kubectl create namespace $namespace
+```
+
+## Create the Kubernetes pod
+```powershell
+kubectl apply -f .\kubernetes\inventory.yaml -n $namespace
+
+# to see list of pods
+kubectl get pods -n $namespace -w
+# to see list of services
+kubectl get services -n $namespace
+# to see the logs of pod
+kubectl logs <name of pod> -n $namespace
+# to see datailed pod
+kubectl describe pod <name of pod> -n $namespace
+
+kubectl rollout restart deployment inventory-deployment -n inventory
+```
+
+## Creating the Azure Managed Identity and granting it access to the Key Vault secrets
+```powershell
+$appname="wbplayeconomy"
+$namespace="inventory"
+az identity create --resource-group $appname --name $namespace
+$IDENTITY_CLIENT_ID=az identity show -g $appname -n $namespace --query clientId -otsv
+# i've to put the appid manually in the Azure Key Vault # 
+az keyvault set-policy -n $appname --secret-permissions get list --spn $IDENTITY_CLIENT_ID
+```
+
+## Establish the federated identity credential
+```powershell
+$AKS_OIDC_ISSUER=az aks show -n $appname -g $appname --query "oidcIssuerProfile.issuerUrl" -otsv
+
+az identity federated-credential create --name $namespace --identity-name $namespace --resource-group $appname --issuer $AKS_OIDC_ISSUER --subject "system:serviceaccount:${namespace}:${namespace}-serviceaccount"
 ```

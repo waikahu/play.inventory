@@ -3,6 +3,7 @@ using GreenPipes;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Play.Common.Configuration;
 using Play.Common.HealthChecks;
 using Play.Common.Identity;
 using Play.Common.MassTransit;
@@ -11,6 +12,8 @@ using Play.Inventory.Service.Entities;
 using Play.Inventory.Service.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.ConfigureAzureKeyVault();
 
 builder.Services.AddMongo()
     .AddMongoRepository<InventoryItem>("inventoryitems")
