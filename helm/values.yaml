@@ -1,0 +1,18 @@
+microserviceName: "inventory"
+
+image:
+  repository: wbplayeconomy.azurecr.io/play.inventory
+  tag: 1.0.4
+
+envVariables:
+  IdentitySettings__PathBase: /inventory-svc
+
+resources:
+  limits:
+    memory: "128Mi"
+    cpu: "150m"
+
+container:
+  port: 5004
+
+identityClientId: 8fe7f3cc-17bb-4e1f-88e8-f541853ee682

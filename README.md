@@ -71,3 +71,27 @@ $AKS_OIDC_ISSUER=az aks show -n $appname -g $appname --query "oidcIssuerProfile.
 
 az identity federated-credential create --name $namespace --identity-name $namespace --resource-group $appname --issuer $AKS_OIDC_ISSUER --subject "system:serviceaccount:${namespace}:${namespace}-serviceaccount"
 ```
+
+## Install the Helm Chart
+```powershell
+$namespace="inventory"
+$appname="wbplayeconomy"
+
+$helmUser=[guid]::Empty.Guid
+$helmPassword=az acr login --name $appname --expose-token --output tsv --query accessToken
+
+helm registry login "$appname.azurecr.io" --username $helmUser --password $helmPassword
+
+$chartVersion="0.1.0"
+helm install inventory-service oci://$appname.azurecr.io/helm/microservice --version $chartVersion -f .\helm\values.yaml -n $namespace
+#or Upgrade
+helm upgrade inventory-service oci://$appname.azurecr.io/helm/microservice --version $chartVersion -f .\helm\values.yaml -n $namespace
+
+helm repo update
+
+#To see if the services are running
+kubectl get pods -n $namespace
+kubectl get services -n $namespace
+kubectl get serviceaccount -n $namespace
+kubectl get deployment -n $namespace
+```
