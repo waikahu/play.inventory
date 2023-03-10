@@ -95,3 +95,6 @@ kubectl get services -n $namespace
 kubectl get serviceaccount -n $namespace
 kubectl get deployment -n $namespace
 ```
+
+## Required repository secrets for GitHub workflow
+GH_PAT: Created in GitHub user profile
