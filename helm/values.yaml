@@ -5,12 +5,7 @@ image:
   tag: 1.0.4
 
 envVariables:
-  IdentitySettings__PathBase: /inventory-svc
-
-resources:
-  limits:
-    memory: "128Mi"
-    cpu: "150m"
+  ServiceSettings__Authority: https://wbplayeconomy.eastus.cloudapp.azure.com/identity-svc
 
 container:
   port: 5004
