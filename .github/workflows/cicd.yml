@@ -16,7 +16,7 @@ jobs:
       uses: anothrNick/github-tag-action@1.61.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        INITIAL_VERSION: 1.0.2
+        INITIAL_VERSION: 1.0.6
         DEFAULT_BUMP: patch
       
     outputs:
@@ -111,4 +111,4 @@ jobs:
         -n ${{env.SERVICE_NAME}} \
         --set image.tag=${{needs.generate-version.outputs.new_version}} \
         --install \
-        --wait
+        --wait --timeout=1h
