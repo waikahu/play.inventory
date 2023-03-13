@@ -18,23 +18,29 @@ namespace Play.Inventory.Service.Controllers
     public class ItemsController : ControllerBase
     {
         private const string AdminRole = "Admin";
-        private readonly IRepository<InventoryItem> _inventoryItemsRepository;
-        private readonly IRepository<CatalogItem> _catalogItemsRepository;
-        private readonly IPublishEndpoint _publishEndpoint;
 
-        public ItemsController(IRepository<InventoryItem> itemsRepository, IRepository<CatalogItem> catalogClient, 
+        private readonly IRepository<InventoryItem> inventoryItemsRepository;
+        private readonly IRepository<CatalogItem> catalogItemsRepository;
+        private readonly IPublishEndpoint publishEndpoint;
+
+        public ItemsController(
+            IRepository<InventoryItem> inventoryItemsRepository,
+            IRepository<CatalogItem> catalogItemsRepository,
             IPublishEndpoint publishEndpoint)
         {
-            _inventoryItemsRepository = itemsRepository;
-            _catalogItemsRepository = catalogClient;
-            _publishEndpoint = publishEndpoint;
+            this.inventoryItemsRepository = inventoryItemsRepository;
+            this.catalogItemsRepository = catalogItemsRepository;
+            this.publishEndpoint = publishEndpoint;
         }
 
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<IEnumerable<InventoryItemDto>>> GetAsync(Guid userId)
         {
-            if (userId == Guid.Empty) return BadRequest();
+            if (userId == Guid.Empty)
+            {
+                return BadRequest();
+            }
 
             var currentUserId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
@@ -46,13 +52,13 @@ namespace Play.Inventory.Service.Controllers
                 }
             }
 
-            var inventoryItemEntities = await _inventoryItemsRepository.GetAllAsync(item => item.UserId == userId);
+            var inventoryItemEntities = await inventoryItemsRepository.GetAllAsync(item => item.UserId == userId);
             var itemIds = inventoryItemEntities.Select(item => item.CatalogItemId);
-            var catalogItemEntities = await _catalogItemsRepository.GetAllAsync(item => itemIds.Contains(item.Id));
+            var catalogItemEntities = await catalogItemsRepository.GetAllAsync(item => itemIds.Contains(item.Id));
 
             var inventoryItemDtos = inventoryItemEntities.Select(inventoryItem =>
             {
-                var catalogItem = catalogItemEntities.SingleOrDefault(catalogItem => catalogItem.Id == inventoryItem.CatalogItemId);
+                var catalogItem = catalogItemEntities.Single(catalogItem => catalogItem.Id == inventoryItem.CatalogItemId);
                 return inventoryItem.AsDto(catalogItem.Name, catalogItem.Description);
             });
 
@@ -63,7 +69,7 @@ namespace Play.Inventory.Service.Controllers
         [Authorize(Roles = AdminRole)]
         public async Task<ActionResult> PostAsync(GrantItemsDto grantItemsDto)
         {
-            var inventoryItem = await _inventoryItemsRepository.GetAsync(
+            var inventoryItem = await inventoryItemsRepository.GetAsync(
                 item => item.UserId == grantItemsDto.UserId && item.CatalogItemId == grantItemsDto.CatalogItemId);
 
             if (inventoryItem == null)
@@ -76,16 +82,15 @@ namespace Play.Inventory.Service.Controllers
                     AcquiredDate = DateTimeOffset.UtcNow
                 };
 
-                await _inventoryItemsRepository.CreateAsync(inventoryItem);
+                await inventoryItemsRepository.CreateAsync(inventoryItem);
             }
             else
             {
                 inventoryItem.Quantity += grantItemsDto.Quantity;
-                await _inventoryItemsRepository.UpdateAsync(inventoryItem);
+                await inventoryItemsRepository.UpdateAsync(inventoryItem);
             }
 
-            await _publishEndpoint.Publish(new InventoryItemUpdated
-            (
+            await publishEndpoint.Publish(new InventoryItemUpdated(
                 inventoryItem.UserId,
                 inventoryItem.CatalogItemId,
                 inventoryItem.Quantity
