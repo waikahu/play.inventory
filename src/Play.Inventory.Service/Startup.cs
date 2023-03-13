@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Net.Http;
 using MassTransit;
 using Microsoft.AspNetCore.Builder;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Logging;
 using Microsoft.OpenApi.Models;
 using Play.Common.HealthChecks;
 using Play.Common.Identity;
@@ -54,7 +56,10 @@ namespace Play.Inventory.Service
 
             services.AddHealthChecks()
                     .AddMongoDb();
-
+                    
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            
+            IdentityModelEventSource.ShowPII = true;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
