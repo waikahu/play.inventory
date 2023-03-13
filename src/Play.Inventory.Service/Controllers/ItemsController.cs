@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Play.Common;
 using Play.Inventory.Contracts;
+using Play.Inventory.Service.Clients;
+using Play.Inventory.Service.Dtos;
 using Play.Inventory.Service.Entities;
 
 namespace Play.Inventory.Service.Controllers
@@ -58,7 +60,7 @@ namespace Play.Inventory.Service.Controllers
 
             var inventoryItemDtos = inventoryItemEntities.Select(inventoryItem =>
             {
-                var catalogItem = catalogItemEntities.SingleOrDefault(catalogItem => catalogItem.Id == inventoryItem.CatalogItemId);
+                var catalogItem = catalogItemEntities.Single(catalogItem => catalogItem.Id == inventoryItem.CatalogItemId);
                 return inventoryItem.AsDto(catalogItem.Name, catalogItem.Description);
             });
 

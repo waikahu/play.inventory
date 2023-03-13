@@ -2,7 +2,7 @@ microserviceName: "inventory"
 
 image:
   repository: wbplayeconomy.azurecr.io/play.inventory
-  tag: 1.0.4
+  tag: 1.0.11
 
 envVariables:
   ServiceSettings__Authority: https://wbplayeconomy.eastus.cloudapp.azure.com/identity-svc

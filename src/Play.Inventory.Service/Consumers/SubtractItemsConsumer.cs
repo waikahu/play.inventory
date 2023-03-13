@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using MassTransit;
+using Microsoft.Extensions.Logging;
 using Play.Common;
 using Play.Inventory.Contracts;
 using Play.Inventory.Service.Entities;
@@ -10,27 +11,39 @@ namespace Play.Inventory.Service.Consumers
 {
     public class SubtractItemsConsumer : IConsumer<SubtractItems>
     {
-        private readonly IRepository<InventoryItem> _inventoryItemsRepository;
-        private readonly IRepository<CatalogItem> _catalogItemsRepository;
+        private readonly IRepository<InventoryItem> inventoryItemsRepository;
+        private readonly IRepository<CatalogItem> catalogItemsRepository;
+        private readonly ILogger<GrantItemsConsumer> logger;
 
-        public SubtractItemsConsumer(IRepository<InventoryItem> inventoryItemsRepository, IRepository<CatalogItem> catalogItemsRepository)
+        public SubtractItemsConsumer(
+            IRepository<InventoryItem> inventoryItemsRepository, 
+            IRepository<CatalogItem> catalogItemsRepository, 
+            ILogger<GrantItemsConsumer> logger)
         {
-            _inventoryItemsRepository = inventoryItemsRepository;
-            _catalogItemsRepository = catalogItemsRepository;
+            this.inventoryItemsRepository = inventoryItemsRepository;
+            this.catalogItemsRepository = catalogItemsRepository;
+            this.logger = logger;
         }
 
         public async Task Consume(ConsumeContext<SubtractItems> context)
         {
             var message = context.Message;
 
-            var item = await _catalogItemsRepository.GetAsync(message.CatalogItemId);
+            logger.LogInformation(
+                "Subtracting {Quantity} of catalog item {CatalogItemId} from user {UserId} with CorrelationId {CorrelationId}...",
+                message.Quantity,
+                message.CatalogItemId,
+                message.UserId,
+                message.CorrelationId);            
+
+            var item = await catalogItemsRepository.GetAsync(message.CatalogItemId);
 
             if (item == null)
             {
                 throw new UnknownItemException(message.CatalogItemId);
             }
 
-            var inventoryItem = await _inventoryItemsRepository.GetAsync(
+            var inventoryItem = await inventoryItemsRepository.GetAsync(
                 item => item.UserId == message.UserId && item.CatalogItemId == message.CatalogItemId);
 
             if (inventoryItem != null)
@@ -43,17 +56,17 @@ namespace Play.Inventory.Service.Consumers
 
                 inventoryItem.Quantity -= message.Quantity;
                 inventoryItem.MessageIds.Add(context.MessageId.Value);
-                await _inventoryItemsRepository.UpdateAsync(inventoryItem);
-
-                await context.Publish(new InventoryItemUpdated
-                (
-                    inventoryItem.UserId,
-                    inventoryItem.CatalogItemId,
-                    inventoryItem.Quantity
-                ));
+                await inventoryItemsRepository.UpdateAsync(inventoryItem);
             }
 
-            await context.Publish(new InventoryItemsSubtracted(message.CorrelationId));
+            var itemsSubtractedTask = context.Publish(new InventoryItemsSubtracted(message.CorrelationId));
+            var inventoryUpdatedTask = context.Publish(new InventoryItemUpdated(
+                inventoryItem.UserId,
+                inventoryItem.CatalogItemId,
+                inventoryItem.Quantity
+            ));
+
+            await Task.WhenAll(itemsSubtractedTask, inventoryUpdatedTask);
         }
     }
 }
